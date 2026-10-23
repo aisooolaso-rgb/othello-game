@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#176b45">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="オセロ">
+<title>オセロ</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6f4;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#17231b}
+main{max-width:520px;margin:auto;padding:24px 14px;text-align:center}
+h1{font-size:28px;margin:10px 0 20px}
+.score{display:flex;justify-content:space-around;align-items:center;background:white;border-radius:14px;padding:15px;margin-bottom:15px}
+.score strong{font-size:30px;display:block}
+.turn{font-weight:bold;font-size:17px;margin:12px 0}
+.board{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:#125535;padding:5px;border-radius:6px;aspect-ratio:1}
+.cell{background:#31945d;display:flex;align-items:center;justify-content:center;aspect-ratio:1;touch-action:manipulation}
+.stone{width:82%;height:82%;border-radius:50%;box-shadow:0 2px 3px #0003}
+.black{background:#171717}
+.white{background:#fff}
+.hint{width:18%;height:18%;border-radius:50%;background:#124c32;opacity:.55}
+button{border:0;border-radius:10px;background:#176b45;color:white;padding:14px 25px;font-size:16px;font-weight:bold;margin-top:20px}
+.note{font-size:13px;color:#617269;margin-top:15px}
+</style>
+</head>
+<body>
+<main>
+<h1>オセロ</h1>
+<div class="score">
+<div>● 黒<strong id="black">2</strong></div>
+<div>○ 白<strong id="white">2</strong></div>
+</div>
+<div class="turn" id="turn">黒の番です</div>
+<div class="board" id="board"></div>
+<button onclick="restart()">最初からやり直す</button>
+<p class="note">小さな点が表示された場所に石を置けます</p>
+</main>
+<script>
+let board,player,finished;
+const directions=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+function restart(){
+ board=Array(64).fill(0);
+ board[27]=2;board[28]=1;board[35]=1;board[36]=2;
+ player=1;finished=false;render();
+}
+function flips(index,p){
+ if(board[index])return [];
+ const r=Math.floor(index/8),c=index%8,found=[];
+ for(const [dr,dc] of directions){
+  let rr=r+dr,cc=c+dc,temp=[];
+  while(rr>=0&&rr<8&&cc>=0&&cc<8&&board[rr*8+cc]===3-p){
+   temp.push(rr*8+cc);rr+=dr;cc+=dc;
+  }
+  if(rr>=0&&rr<8&&cc>=0&&cc<8&&board[rr*8+cc]===p)found.push(...temp);
+ }
+ return found;
+}
+function legal(p){
+ return board.map((_,i)=>flips(i,p).length?i:-1).filter(i=>i>=0);
+}
+function play(i){
+ if(finished)return;
+ const f=flips(i,player);
+ if(!f.length)return;
+ board[i]=player;
+ for(const j of f)board[j]=player;
+ const other=3-player;
+ if(legal(other).length)player=other;
+ else if(!legal(player).length)finished=true;
+ render();
+}
+function render(){
+ const el=document.getElementById('board');
+ el.innerHTML='';
+ const moves=finished?[]:legal(player);
+ for(let i=0;i<64;i++){
+  const cell=document.createElement('div');
+  cell.className='cell';
+  if(board[i]){
+   const stone=document.createElement('div');
+   stone.className='stone '+(board[i]===1?'black':'white');
+   cell.appendChild(stone);
+  }else if(moves.includes(i)){
+   const hint=document.createElement('div');
+   hint.className='hint';cell.appendChild(hint);
+  }
+  cell.addEventListener('click',()=>play(i));
+  el.appendChild(cell);
+ }
+ const b=board.filter(x=>x===1).length;
+ const w=board.filter(x=>x===2).length;
+ document.getElementById('black').textContent=b;
+ document.getElementById('white').textContent=w;
+ const status=document.getElementById('turn');
+ if(finished)status.textContent=b===w?'引き分けです':(b>w?'黒':'白')+'の勝ちです';
+ else status.textContent=(player===1?'黒':'白')+'の番です';
+}
+restart();
+</script>
+</body>
+</html>
